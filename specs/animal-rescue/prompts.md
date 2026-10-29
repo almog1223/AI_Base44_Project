@@ -156,3 +156,59 @@ Add scheduled automations (daily at 08:00) that send emails using the built-in e
 3. When an AdoptionApplication status changes – email the applicant with the new status in Hebrew.
 Add a "שלח תזכורות עכשיו" button on the dashboard (admin only) to trigger reminders manually for the demo.
 ```
+
+---
+
+# פרומפטים מאוחדים אחרי סבב בדיקה 1 (2026-10-29)
+
+הבדיקה של P3 עד P5 מצאה פערים (ראו [verification.md](../../docs/verification.md)). כדי לחסוך קרדיטים, התיקונים אוחדו עם השלבים הבאים. **P6+ מחליף את P6, ו-P7+ מחליף את P7.** הסדר: P6+ ← P7+ ← P9 ← P8 (בונוס).
+
+לפני P6+ צריך לתקן ידנית ב-Data (בלי AI): את 5 החיסונים הקרובים או באיחור ל-status = scheduled, ואת התמונות של לוקי וסנדי (T1.4, T1.5).
+
+## P6+: חסימה, כרטיס פנימי ומשימות רפואיות
+
+```
+Fixes and next step. Keep everything that already works.
+
+1. Blocking logic (backend): whenever a MedicalRecord is created or updated, recompute the related Animal:
+   - is_blocked = true if the animal has ANY MedicalRecord with no_leave = true AND status = active AND (end_date is empty OR end_date >= today); otherwise false.
+   - If is_blocked becomes true and status is available or pending_adoption, set status = in_treatment.
+   - Reject (UI and backend) any attempt to set status = available or pending_adoption while is_blocked = true, with the Hebrew error "לא ניתן – בעל החיים בטיפול פעיל שאסור להפסיק".
+
+2. Internal animal profile page at /dashboard/animals/:id (replace the current edit dialog; keep an "ערוך" button inside the page). Tabs:
+   - "פרטים": all fields, editable by admin/coordinator/vet. Include a foster selector (users with app_role = foster) that sets foster_id and foster_name. When foster_id changes, update foster_id on all MedicalRecords of this animal too (RLS depends on it).
+   - "רפואי": MedicalRecords timeline, newest first, with "הוסף טיפול" for vet/admin.
+   - "התנהגות": BehaviorReports, newest first.
+   - "בקשות": AdoptionApplications for this animal (coordinator/admin only).
+   When is_blocked = true show a prominent red banner at the top: "בטיפול פעיל – אסור לצאת מהמחסה / למסור לאימוץ". Clicking a row in the dashboard animals table opens this page.
+
+3. Medical tasks page (vet): show ONLY MedicalRecords with status != done AND next_due_date <= today + 7 days (including overdue). Sort by next_due_date ascending. Overdue rows highlighted in red with "באיחור X ימים". "סמן כבוצע" sets status = done and removes the row.
+```
+
+## P7+: סוכן התאמה ולוח Kanban
+
+```
+1. Create an AI agent named "סוכן התאמת אימוץ".
+   Tools / permissions (least privilege): READ Animal (only status = available and is_blocked = false), BehaviorReport, AdoptionApplication. CREATE MatchRecommendation only. No access to MedicalRecord or User contact details. Must NOT update any application or animal.
+   Instructions:
+   a. Read the application and, if animal_id is set, that animal plus its BehaviorReports.
+   b. Score fit 0-100: size and energy vs home_type and hours_alone_per_day; good_with_kids/dogs/cats vs has_kids/dogs/cats; adopter experience vs energy; preferred_size / preferred_energy. Prefer behavior observed in BehaviorReports over static fields.
+   c. Create a MatchRecommendation for the requested animal (if any) and for the 3 best other available animals. Only use animal ids from the data you read – never invent animals.
+   d. reasoning: 2-3 short Hebrew sentences. warnings: concrete risks in Hebrew (e.g. "כלב אנרגטי ודירה קטנה ללא חצר").
+   e. End by stating that the final decision is human.
+
+2. Applications board (coordinator/admin): replace the list with a Kanban, one column per status (חדשה, בבדיקה, נקבעה פגישה, אושרה, אומץ, נדחתה), drag a card to change status. Card: applicant name, requested animal, best match score if exists.
+   Clicking a card opens the application details with a button "הפעל סוכן התאמה" that runs the agent and then shows the recommendations as cards sorted by score, with links to the animals.
+```
+
+## P9: דשבורד, כרטיס ציבורי והרשאות
+
+```
+1. Dashboard: add KPI cards for animals by location (shelter / foster), overdue medical tasks (status != done and next_due_date < today), and blocked animals. Add table filters for location_type, species and is_blocked.
+
+2. Public animal profile: add a section "מה משפחת האומנה מספרת" that summarizes the latest BehaviorReport (leash walking, energy, good with kids/dogs/cats, and the notes text, without reporter name). Return it through the public backend function (getPublicAnimals or a new getPublicAnimal) so guests never read BehaviorReport directly.
+
+3. Permissions fixes (enforce in backend, not only UI):
+   - BehaviorReport create: a foster may create a report only if Animal.foster_id = current user. Volunteer, vet and admin may create for any animal.
+   - AdoptionApplication: an adopter may create and read their own applications, but may NOT change status or assigned_coordinator. Only coordinator/admin may change status. If the platform rules cannot restrict single fields, route adopter updates through a backend function that ignores those fields.
+```
