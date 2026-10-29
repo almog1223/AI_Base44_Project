@@ -211,4 +211,8 @@ Fixes and next step. Keep everything that already works.
 3. Permissions fixes (enforce in backend, not only UI):
    - BehaviorReport create: a foster may create a report only if Animal.foster_id = current user. Volunteer, vet and admin may create for any animal.
    - AdoptionApplication: an adopter may create and read their own applications, but may NOT change status or assigned_coordinator. Only coordinator/admin may change status. If the platform rules cannot restrict single fields, route adopter updates through a backend function that ignores those fields.
+
+4. Login and sign-up pages: Hebrew text and RTL layout, matching the app's style.
 ```
+
+אם דף ההתחברות מגיע מהפלטפורמה ולא ניתן לתרגם אותו בפרומפט, צריך לחפש הגדרת שפה ב-Dashboard ← Settings. אם גם שם אין אפשרות כזו, נתעד את זה כמגבלה במסמך ההגשה.
