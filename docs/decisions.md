@@ -10,3 +10,8 @@
 - כל אחד יכול להירשם לאפליקציה, ומשתמש חדש מקבל אוטומטית app_role = adopter.
 - זה תואם את ה-spec: מאמץ פוטנציאלי נרשם בעצמו כדי להגיש בקשה. תפקידי הצוות והאומנה ניתנים רק בהזמנה, ורק מנהל יכול לשנות app_role.
 - הסיכון קטן, כי למאמץ אין גישה למידע ניהולי או רפואי (נאכף ב-RLS).
+
+## 2026-10-29: עותקים ב-Claude Docs
+- מסמך האפיון: https://claude.ai/artifact/FGAj84NyZzNwVzhNQQ4uD5 (מבוסס על spec.md)
+- סיכום שלב 2 (הרשאות): https://claude.ai/artifact/SkT9pYSMnByQwUxnMDtRBK
+- מקור האמת נשאר `specs/animal-rescue/spec.md`. שינוי שנעשה במסמך צריך להיכנס גם ל-spec.md.
